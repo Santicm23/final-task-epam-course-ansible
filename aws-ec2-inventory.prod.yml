@@ -10,10 +10,9 @@ hostnames:
 include_filters:
   tag:Environment: prod
   tag:Project: final-project
-
-exclude_filters:
-  - tag:Role: database
-  - tag:Role: bastion
+  tag:Role:
+    - frontend
+    - backend
 
 leading_separator: true
 keyed_groups:
