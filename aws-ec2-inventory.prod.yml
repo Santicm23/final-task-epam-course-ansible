@@ -8,11 +8,11 @@ hostnames:
   - ip-address
 
 filters:
-  tag:Environment: prod
-  tag:Project: final-project
-  tag:Role:
-    - frontend
-    - backend
+  - tag:Environment: prod
+  - tag:Project: final-project
+  - tag:Role:
+      - frontend
+      - backend
 
 leading_separator: false
 keyed_groups:
