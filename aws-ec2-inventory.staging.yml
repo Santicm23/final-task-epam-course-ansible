@@ -7,7 +7,7 @@ regions:
 hostnames:
   - ip-address
 
-include_filters:
+filters:
   tag:Environment: staging
   tag:Project: final-project
   tag:Role:

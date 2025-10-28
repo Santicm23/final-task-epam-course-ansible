@@ -7,13 +7,13 @@ regions:
 hostnames:
   - ip-address
 
-include_filters:
+filters:
   tag:Environment: prod
   tag:Project: final-project
   tag:Role:
     - frontend
     - backend
 
-leading_separator: true
+leading_separator: false
 keyed_groups:
   - key: tags.Role
