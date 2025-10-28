@@ -12,9 +12,8 @@ include_filters:
   tag:Project: final-project
 
 exclude_filters:
-  tag:Role:
-    - database
-    - bastion
+  - "tag:Role": database
+  - "tag:Role": bastion
 
 leading_separator: false
 keyed_groups:
