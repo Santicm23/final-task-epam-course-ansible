@@ -1,0 +1,29 @@
+---
+- name: Install Node.js and pnpm
+  hosts: all
+  become: true
+  vars:
+    nodejs_version: "22"
+
+  tasks:
+    - name: Install Node.js
+      shell: |
+        curl -fsSL https://deb.nodesource.com/setup_{{ nodejs_version }}.x | bash -
+        apt-get install -y nodejs
+      args:
+        creates: /usr/bin/node
+
+    - name: Install pnpm
+      shell: npm install -g pnpm
+      args:
+        creates: /usr/bin/pnpm
+
+    - name: Verify installations
+      shell: |
+        node --version
+        pnpm --version
+      register: versions
+
+    - name: Show versions
+      debug:
+        msg: "{{ versions.stdout_lines }}"
