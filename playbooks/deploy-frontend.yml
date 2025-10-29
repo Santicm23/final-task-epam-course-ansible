@@ -1,0 +1,28 @@
+---
+- name: Deploy and run Frontend
+  hosts: backend
+  become: true
+  vars:
+    ansible_user: ubuntu
+    monorepo_dest: "/opt/devops-rampup"
+    backend_url: "{{ lookup('env', 'BACKEND_URL') }}"
+    frontend_port: 80
+    frontend_path: "{{ monorepo_dest }}/movie-analyst-ui"
+
+  tasks:
+    - name: Install/Update dependencies if code changed
+      shell: pnpm install
+      args:
+        chdir: "{{ frontend_path }}"
+      become_user: "{{ ansible_user }}"
+
+    - name: Start frontend with environment variables
+      shell: |
+        node server.js &
+      args:
+        chdir: "{{ frontend_path }}"
+      environment:
+        BACKEND_URL: "{{ backend_url }}"
+        PORT: "{{ frontend_port }}"
+        NODE_ENV: "production"
+      become_user: "root"
