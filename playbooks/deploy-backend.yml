@@ -18,7 +18,6 @@
       args:
         chdir: "{{ backend_path }}"
       become_user: "{{ ansible_user }}"
-      when: git_update.changed
 
     - name: Install MySQL client
       apt:
