@@ -51,7 +51,7 @@
 
     - name: Start backend with environment variables
       shell: |
-        node server.js
+        node server.js &
       args:
         chdir: "{{ backend_path }}"
       environment:
