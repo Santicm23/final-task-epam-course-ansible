@@ -1,24 +1,51 @@
 ---
 - name: Deploy and run Frontend
-  hosts: backend
+  hosts: frontend
   become: true
   vars:
     ansible_user: ubuntu
     monorepo_dest: "/opt/devops-rampup"
     backend_url: "{{ lookup('env', 'BACKEND_URL') }}"
-    frontend_port: 80
+    frontend_port: "{{ lookup('env', 'FRONTEND_PORT') | default('80') }}"
     frontend_path: "{{ monorepo_dest }}/movie-analyst-ui"
 
   tasks:
-    - name: Install/Update dependencies if code changed
+    - name: Update repository to latest version
+      git:
+        repo: "https://github.com/Santicm23/devops-rampup.git"
+        dest: "{{ monorepo_dest }}"
+        version: "master"
+        force: yes
+      become_user: "{{ ansible_user }}"
+      register: git_update
+
+    - name: Install/Update dependencies
       shell: pnpm install
       args:
         chdir: "{{ frontend_path }}"
       become_user: "{{ ansible_user }}"
 
+    - name: Kill existing frontend process
+      shell: pkill -f "node server.js" || true
+      ignore_errors: yes
+
+    - name: Wait for port to be free
+      wait_for:
+        port: "{{ frontend_port }}"
+        state: stopped
+        timeout: 10
+      ignore_errors: yes
+
+    - name: Display configuration before starting
+      debug:
+        msg:
+          - "Backend URL: {{ backend_url }}"
+          - "Frontend Port: {{ frontend_port }}"
+          - "Frontend Path: {{ frontend_path }}"
+
     - name: Start frontend with environment variables
       shell: |
-        node server.js &
+        nohup node server.js > /var/log/frontend.log 2>&1 &
       args:
         chdir: "{{ frontend_path }}"
       environment:
@@ -26,3 +53,35 @@
         PORT: "{{ frontend_port }}"
         NODE_ENV: "production"
       become_user: "root"
+
+    - name: Wait for frontend to start
+      wait_for:
+        port: "{{ frontend_port }}"
+        delay: 2
+        timeout: 30
+        msg: "Frontend failed to start on port {{ frontend_port }}"
+
+    - name: Check if frontend is running
+      shell: pgrep -f "node server.js"
+      register: frontend_process
+      ignore_errors: yes
+
+    - name: Display frontend process status
+      debug:
+        msg: "Frontend is {{ 'running with PID ' + frontend_process.stdout if frontend_process.rc == 0 else 'NOT running' }}"
+
+    - name: Configure firewall for frontend
+      ufw:
+        rule: allow
+        port: "{{ frontend_port }}"
+        proto: tcp
+
+    - name: Show frontend logs
+      shell: tail -20 /var/log/frontend.log
+      register: frontend_logs
+      ignore_errors: yes
+
+    - name: Display frontend logs
+      debug:
+        msg: "{{ frontend_logs.stdout_lines }}"
+      when: frontend_logs.stdout_lines is defined
