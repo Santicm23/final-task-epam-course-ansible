@@ -12,7 +12,6 @@ pipx ensurepath
 # Install Ansible
 pipx install --include-deps ansible
 pipx ensurepath
-source ~/.bashrc
 pipx inject ansible boto3 botocore
 
 # Install AWS CLI

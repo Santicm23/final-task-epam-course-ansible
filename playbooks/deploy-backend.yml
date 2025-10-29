@@ -3,6 +3,7 @@
   hosts: backend
   become: true
   vars:
+    ansible_user: ubuntu
     monorepo_dest: "/opt/devops-rampup"
     db_host: "db-domain" # Update with actual DB host
     db_user: "youruser" # Update with actual DB user
