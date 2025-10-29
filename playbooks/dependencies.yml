@@ -7,7 +7,7 @@
     nodejs_version: "22"
     monorepo_url: "https://github.com/Santicm23/devops-rampup.git"
     monorepo_dest: "/opt/devops-rampup"
-    repo_branch: "main"
+    repo_branch: "master"
 
   tasks:
     - name: Update apt cache
