@@ -5,12 +5,13 @@
   vars:
     ansible_user: ubuntu
     monorepo_dest: "/opt/devops-rampup"
-    db_host: "db-domain" # Update with actual DB host
-    db_user: "youruser" # Update with actual DB user
-    db_password: "yourpassword" # Update with actual DB password
+    db_host: "{{ lookup('env', 'DB_HOST') }}"
+    db_user: "{{ lookup('env', 'DB_USER') }}"
+    db_password: "{{ lookup('env', 'DB_PASSWORD') }}"
     db_name: "movie_db"
     backend_port: 80
     backend_path: "{{ monorepo_dest }}/movie-analyst-api"
+    sql_schema_file: "{{ backend_path }}/schema.sql"
 
   tasks:
     - name: Install/Update dependencies if code changed
@@ -29,13 +30,11 @@
         name: python3-pymysql
         state: present
 
-    - name: Create database
-      mysql_db:
-        login_host: "{{ db_host }}"
-        login_user: "{{ db_user }}"
-        login_password: "{{ db_password }}"
-        name: "{{ db_name }}"
-        state: present
+    - name: Execute SQL schema file (creates DB and tables if not exist)
+      shell: mysql -h {{ db_host }} -u {{ db_user }} -p{{ db_password }} < {{ sql_schema_file }}
+      args:
+        chdir: "{{ backend_path }}"
+      become_user: "{{ ansible_user }}"
 
     - name: Run database seed script
       shell: node seeds.js
