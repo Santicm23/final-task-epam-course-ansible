@@ -61,4 +61,4 @@
         DB_NAME: "{{ db_name }}"
         PORT: "{{ backend_port }}"
         NODE_ENV: "production"
-      become_user: "{{ ansible_user }}"
+      become_user: "root"
