@@ -1,0 +1,65 @@
+---
+- name: Deploy and run backend
+  hosts: backend
+  become: true
+  vars:
+    monorepo_dest: "/opt/devops-rampup"
+    db_host: "db-domain" # Update with actual DB host
+    db_user: "youruser" # Update with actual DB user
+    db_password: "yourpassword" # Update with actual DB password
+    db_name: "movie_db"
+    backend_port: 80
+    backend_path: "{{ monorepo_dest }}/movie-analyst-api"
+
+  tasks:
+    - name: Install/Update dependencies if code changed
+      shell: pnpm install
+      args:
+        chdir: "{{ backend_path }}"
+      become_user: "{{ ansible_user }}"
+      when: git_update.changed
+
+    - name: Install MySQL client
+      apt:
+        name: mysql-client
+        state: present
+
+    - name: Install Python MySQL library
+      apt:
+        name: python3-pymysql
+        state: present
+
+    - name: Create database
+      mysql_db:
+        login_host: "{{ db_host }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        name: "{{ db_name }}"
+        state: present
+
+    - name: Run database seed script
+      shell: node seeds.js
+      args:
+        chdir: "{{ backend_path }}"
+      environment:
+        DB_HOST: "{{ db_host }}"
+        DB_USER: "{{ db_user }}"
+        DB_PASS: "{{ db_password }}"
+        DB_NAME: "{{ db_name }}"
+        NODE_ENV: "production"
+      become_user: "{{ ansible_user }}"
+      register: seed_result
+
+    - name: Start backend with environment variables
+      shell: |
+        node server.js
+      args:
+        chdir: "{{ backend_path }}"
+      environment:
+        DB_HOST: "{{ db_host }}"
+        DB_USER: "{{ db_user }}"
+        DB_PASS: "{{ db_password }}"
+        DB_NAME: "{{ db_name }}"
+        PORT: "{{ backend_port }}"
+        NODE_ENV: "production"
+      become_user: "{{ ansible_user }}"

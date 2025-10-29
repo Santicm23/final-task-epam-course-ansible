@@ -1,11 +1,19 @@
 ---
-- name: Install Node.js and pnpm
+- name: Install Node.js, pnpm and clone monorepo
   hosts: all
   become: true
   vars:
     nodejs_version: "22"
+    monorepo_url: "https://github.com/Santicm23/devops-rampup.git"
+    monorepo_dest: "/opt/devops-rampup"
+    repo_branch: "main"
 
   tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
     - name: Install Node.js
       shell: |
         curl -fsSL https://deb.nodesource.com/setup_{{ nodejs_version }}.x | bash -
@@ -27,3 +35,20 @@
     - name: Show versions
       debug:
         msg: "{{ versions.stdout_lines }}"
+
+    - name: Create application directory
+      file:
+        path: "{{ monorepo_dest }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Clone monorepo
+      git:
+        repo: "{{ monorepo_url }}"
+        dest: "{{ monorepo_dest }}"
+        version: "{{ repo_branch }}"
+        force: yes
+      become_user: "{{ ansible_user }}"
+      register: git_clone
