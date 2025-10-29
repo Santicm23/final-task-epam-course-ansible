@@ -14,7 +14,16 @@
     sql_schema_file: "{{ backend_path }}/schema.sql"
 
   tasks:
-    - name: Install/Update dependencies if code changed
+    - name: Update repository to latest version
+      git:
+        repo: "https://github.com/Santicm23/devops-rampup.git"
+        dest: "{{ monorepo_dest }}"
+        version: "master"
+        force: yes
+      become_user: "{{ ansible_user }}"
+      register: git_update
+
+    - name: Install/Update dependencies
       shell: pnpm install
       args:
         chdir: "{{ backend_path }}"
@@ -48,10 +57,24 @@
         NODE_ENV: "production"
       become_user: "{{ ansible_user }}"
       register: seed_result
+      ignore_errors: yes
+
+    - name: Display configuration before starting
+      debug:
+        msg:
+          - "DB Host: {{ db_host }}"
+          - "DB Name: {{ db_name }}"
+          - "Backend Port: {{ backend_port }}"
+          - "Backend Path: {{ backend_path }}"
+
+    - name: Kill existing backend process
+      shell: pkill -f "node server.js" || true
+      ignore_errors: yes
+      failed_when: false
 
     - name: Start backend with environment variables
       shell: |
-        node server.js &
+        nohup node server.js > /var/log/backend.log 2>&1 &
       args:
         chdir: "{{ backend_path }}"
       environment:
@@ -61,4 +84,36 @@
         DB_NAME: "{{ db_name }}"
         PORT: "{{ backend_port }}"
         NODE_ENV: "production"
-      become_user: "root"
+      become_user: "{{ 'root' if backend_port < 1024 else ansible_user }}"
+
+    - name: Wait for backend to start
+      wait_for:
+        port: "{{ backend_port }}"
+        delay: 2
+        timeout: 30
+      ignore_errors: yes
+
+    - name: Check if backend is running
+      shell: pgrep -f "node server.js"
+      register: backend_process
+      ignore_errors: yes
+
+    - name: Display backend process status
+      debug:
+        msg: "Backend is {{ 'running with PID ' + backend_process.stdout if backend_process.rc == 0 else 'NOT running' }}"
+
+    - name: Configure firewall for backend
+      ufw:
+        rule: allow
+        port: "{{ backend_port }}"
+        proto: tcp
+
+    - name: Show backend logs
+      shell: tail -20 /var/log/backend.log
+      register: backend_logs
+      ignore_errors: yes
+
+    - name: Display backend logs
+      debug:
+        msg: "{{ backend_logs.stdout_lines }}"
+      when: backend_logs.stdout_lines is defined
