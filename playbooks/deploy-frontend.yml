@@ -6,7 +6,7 @@
     ansible_user: ubuntu
     monorepo_dest: "/opt/devops-rampup"
     backend_url: "{{ lookup('env', 'BACKEND_URL') }}"
-    frontend_port: "{{ lookup('env', 'FRONTEND_PORT') | default('80') }}"
+    frontend_port: 80
     frontend_path: "{{ monorepo_dest }}/movie-analyst-ui"
 
   tasks:
